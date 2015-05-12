@@ -1655,6 +1655,10 @@ else
     $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
 endif
 
+BOOT_ZIP_FROM_IMAGE_SCRIPT := ./build/tools/releasetools/boot_flash_from_image
+KERNEL_PATH := $(TARGET_KERNEL_SOURCE)/arch/arm/configs/$(TARGET_KERNEL_CONFIG)
+#BOOT_ZIP_OUT_FILE := Omni-Kernel-$(DEVICE).zip
+
 ifeq ($(TARGET_OTA_ASSERT_DEVICE),)
     $(INTERNAL_OTA_PACKAGE_TARGET): override_device := auto
 else
@@ -1699,12 +1703,18 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 
 CUSTOM_TARGET_PACKAGE := $(PRODUCT_OUT)/omni-$(ROM_VERSION).zip
 
-.PHONY: otapackage bacon
+.PHONY: otapackage bacon bootzip
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
 bacon: otapackage
 	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(CUSTOM_TARGET_PACKAGE)
 	$(hide) $(MD5SUM) $(CUSTOM_TARGET_PACKAGE) | cut -d ' ' -f1 > $(CUSTOM_TARGET_PACKAGE).md5sum
 	@echo -e ${PRT_CPL}"Package complete: $(CUSTOM_TARGET_PACKAGE)"${CL_RST}
+
+bootzip: bootimage
+	$(BOOT_ZIP_FROM_IMAGE_SCRIPT) \
+	   $(recovery_fstab) \
+	   $(OUT) \
+	   $(TARGET_DEVICE)
 
 endif    # recovery_fstab is defined
 endif    # TARGET_NO_KERNEL != true
