@@ -70,24 +70,9 @@ Usage:  ota_from_target_files [flags] input_target_files output_ota_package
   -a  (--aslr_mode)  <on|off>
       Specify whether to turn on ASLR for the package (on by default).
 
-  --backup <boolean>
-      Enable or disable the execution of backuptool.sh.
-      Disabled by default.
-
-  --override_device <device>
-      Override device-specific asserts. Can be a comma-separated list.
-
-  --override_prop <boolean>
-      Override build.prop items with custom vendor init.
-      Enabled when TARGET_UNIFIED_DEVICE is defined in BoardConfig
-
   --override_boot_partition <string>
       Override the partition where the boot image is installed.
       Used for devices with a staging partition (Asus Transformer).
-
-  --mount_by_label <boolean>
-      Force the OTA package to mount and format System by label
-      Can be enabled by defining TARGET_SETS_FSTAB. Defaults to false.
 
   -2  (--two_step)
       Generate a 'two-step' OTA package, where recovery is updated
@@ -1610,16 +1595,8 @@ def main(argv):
       else:
         raise ValueError("Cannot parse value %r for option %r - only "
                          "integers are allowed." % (a, o))
-    elif o in ("--backup"):
-      OPTIONS.backuptool = bool(a.lower() == 'true')
-    elif o in ("--override_device"):
-      OPTIONS.override_device = a
-    elif o in ("--override_prop"):
-      OPTIONS.override_prop = bool(a.lower() == 'true')
     elif o in ("--override_boot_partition"):
       OPTIONS.override_boot_partition = a
-    elif o in ("--mount_by_label"):
-      OPTIONS.mount_by_label = bool(a.lower() == 'true')
     elif o in ("-2", "--two_step"):
       OPTIONS.two_step = True
     elif o == "--no_signing":
@@ -1655,12 +1632,8 @@ def main(argv):
                                  "extra_script=",
                                  "worker_threads=",
                                  "aslr_mode=",
-                                 "backup=",
-                                 "override_device=",
-                                 "override_prop=",
                                  "override_boot_partition=",
                                  "two_step",
-                                 "mount_by_label=",
                                  "no_signing",
                                  "block",
                                  "binary=",
@@ -1682,6 +1655,18 @@ def main(argv):
 
   OPTIONS.target_tmp = OPTIONS.input_tmp
   OPTIONS.info_dict = common.LoadInfoDict(input_zip)
+
+  if "ota_override_device" in OPTIONS.info_dict:
+    OPTIONS.override_device = OPTIONS.info_dict.get("ota_override_device")
+
+  if "ota_override_prop" in OPTIONS.info_dict:
+    OPTIONS.override_prop = OPTIONS.info_dict.get("ota_override_prop") == "true"
+
+  if "ota_backuptool" in OPTIONS.info_dict:
+    OPTIONS.backuptool = OPTIONS.info_dict.get("ota_backuptool") == "true"
+
+  if "ota_mount_by_label" in OPTIONS.info_dict:
+    OPTIONS.mount_by_label = OPTIONS.info_dict.get("ota_mount_by_label") == "true"
 
   # If this image was originally labelled with SELinux contexts, make sure we
   # also apply the labels in our new image. During building, the "file_contexts"

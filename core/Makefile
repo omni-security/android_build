@@ -1609,6 +1609,10 @@ ifneq ($(OEM_THUMBPRINT_PROPERTIES),)
 	# OTA scripts are only interested in fingerprint related properties
 	$(hide) echo "oem_fingerprint_properties=$(OEM_THUMBPRINT_PROPERTIES)" >> $(zip_root)/META/misc_info.txt
 endif
+	$(hide) echo "ota_override_device=$(OTA_SCRIPT_OVERRIDE_DEVICE)" >> $(zip_root)/META/misc_info.txt
+	$(hide) echo "ota_override_prop=$(OTA_SCRIPT_OVERRIDE_PROP)" >> $(zip_root)/META/misc_info.txt
+	$(hide) echo "ota_mount_by_label=$(OTA_SCRIPT_MOUNT_BY_LABEL)" >> $(zip_root)/META/misc_info.txt
+	$(hide) echo "ota_backuptool=$(OTA_SCRIPT_BACKUPTOOL)" >> $(zip_root)/META/misc_info.txt
 	$(call generate-userimage-prop-dictionary, $(zip_root)/META/misc_info.txt)
 #	$(hide) PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH MKBOOTIMG=$(MKBOOTIMG) \
 #	    ./build/tools/releasetools/make_recovery_patch $(zip_root) $(zip_root)
@@ -1650,9 +1654,9 @@ INTERNAL_OTA_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 $(INTERNAL_OTA_PACKAGE_TARGET): KEY_CERT_PAIR := $(DEFAULT_KEY_CERT_PAIR)
 
 ifneq ($(CUSTOM_BUILD),)
-    $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := true
+    OTA_SCRIPT_BACKUPTOOL := true
 else
-    $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
+    OTA_SCRIPT_BACKUPTOOL := false
 endif
 
 BOOT_ZIP_FROM_IMAGE_SCRIPT := ./build/tools/releasetools/boot_flash_from_image
@@ -1660,9 +1664,9 @@ KERNEL_PATH := $(TARGET_KERNEL_SOURCE)/arch/arm/configs/$(TARGET_KERNEL_CONFIG)
 #BOOT_ZIP_OUT_FILE := Omni-Kernel-$(DEVICE).zip
 
 ifeq ($(TARGET_OTA_ASSERT_DEVICE),)
-    $(INTERNAL_OTA_PACKAGE_TARGET): override_device := auto
+    OTA_SCRIPT_OVERRIDE_DEVICE := auto
 else
-    $(INTERNAL_OTA_PACKAGE_TARGET): override_device := $(TARGET_OTA_ASSERT_DEVICE)
+    OTA_SCRIPT_OVERRIDE_DEVICE := $(TARGET_OTA_ASSERT_DEVICE)
 endif
 
 ifeq ($(TARGET_RELEASETOOL_OTA_FROM_TARGET_SCRIPT),)
@@ -1672,18 +1676,18 @@ else
 endif
 
 ifeq ($(TARGET_UNIFIED_DEVICE),)
-    $(INTERNAL_OTA_PACKAGE_TARGET): override_prop := false
+    OTA_SCRIPT_OVERRIDE_PROP := false
 else
-    $(INTERNAL_OTA_PACKAGE_TARGET): override_prop := true
+    OTA_SCRIPT_OVERRIDE_PROP := true
     ifeq ($(TARGET_OTA_ASSERT_DEVICE),)
-        $(INTERNAL_OTA_PACKAGE_TARGET): override_device := $(TARGET_DEVICE)
+        OTA_SCRIPT_OVERRIDE_DEVICE := $(TARGET_DEVICE)
     endif
 endif
 
 ifneq ($(TARGET_SETS_FSTAB),)
-    $(INTERNAL_OTA_PACKAGE_TARGET): mount_by_label := true
+    OTA_SCRIPT_MOUNT_BY_LABEL := true
 else
-    $(INTERNAL_OTA_PACKAGE_TARGET): mount_by_label := false
+    OTA_SCRIPT_MOUNT_BY_LABEL := false
 endif
 
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
@@ -1693,10 +1697,6 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	   $(if $(CUSTOM_BUILD),, --block) \
 	   -p $(HOST_OUT) \
 	   -k $(KEY_CERT_PAIR) \
-	   --backup=$(backuptool) \
-	   --override_device=$(override_device) \
-	   --override_prop=$(override_prop) \
-	   --mount_by_label=$(mount_by_label) \
 	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
 	   $(TARGET_RELEASETOOL_OTA_FROM_TARGET_ADDITIONAL_ARGS) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
